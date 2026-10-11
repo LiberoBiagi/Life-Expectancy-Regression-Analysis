@@ -1,0 +1,200 @@
+@page {
+    /* 23.39in x 33.11in is the exact dimension of A1 */
+    size: 23.39in 33.11in;
+    margin: 0;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #E0E0E0;
+    font-family: 'Arial', sans-serif;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+.poster-container {
+    width: 594mm;
+    /* A1 Width */
+    height: 841mm;
+    /* A1 Height */
+    background-color: white;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* HEADER */
+.header-section {
+    background-color: #4B6F9E !important;
+    color: white !important;
+    padding: 40px;
+    text-align: center;
+    border-bottom: 15px solid #2C3E50 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+.header-section h1 {
+    font-size: 80px;
+    /* Bigger title */
+    margin: 0 0 20px 0;
+    text-transform: uppercase;
+    color: white !important;
+}
+
+.authors {
+    font-size: 40px;
+    margin: 10px 0;
+    font-weight: bold;
+    color: white !important;
+}
+
+.affiliation {
+    font-size: 30px;
+    font-style: italic;
+    opacity: 0.9;
+    color: white !important;
+}
+
+/* BODY */
+.body-row {
+    display: flex;
+    flex: 1;
+    padding: 40px;
+    gap: 50px;
+}
+
+.column {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.left-col {
+    flex: 40%;
+}
+
+.right-col {
+    flex: 60%;
+}
+
+/* BOXES */
+.section-box {
+    margin-bottom: 30px;
+}
+
+h2 {
+    background-color: #4B6F9E !important;
+    color: white !important;
+    padding: 15px 25px;
+    font-size: 36px;
+    text-transform: uppercase;
+    margin-top: 0;
+    border-radius: 8px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+p,
+ul,
+li,
+table {
+    font-size: 26px;
+    line-height: 1.5;
+    color: #333;
+}
+
+/* HIGHLIGHT BOX (Research Question) */
+.highlight-box {
+    background-color: #eef4fa !important;
+    border-left: 15px solid #2C3E50 !important;
+    padding: 30px;
+    font-size: 38px;
+    /* Larger text for the question */
+    font-weight: bold;
+    color: #2C3E50;
+    margin-top: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+/* FIGURES */
+.figure-box {
+    border: 3px solid #ccc;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    background: #fff;
+}
+
+.figure-box h3 {
+    margin-top: 0;
+    font-size: 32px;
+    color: #2C3E50;
+    border-bottom: 2px solid #eee;
+}
+
+.caption {
+    font-style: italic;
+    color: #666;
+    margin-top: 15px;
+    font-size: 24px;
+}
+
+/* TABLES */
+table {
+    border-collapse: collapse;
+    font-family: 'Times New Roman', serif;
+    font-size: 28px;
+    width: 100%;
+    border-top: 4px solid #333;
+    border-bottom: 4px solid #333;
+    margin-top: 20px;
+}
+
+th {
+    border-bottom: 2px solid #333;
+    padding: 15px 10px;
+    font-weight: bold;
+    text-align: right;
+    /* Align headers with numbers */
+}
+
+th:first-child {
+    text-align: left;
+}
+
+td {
+    border: none;
+    padding: 12px 10px;
+    text-align: right;
+    border-bottom: 1px solid transparent;
+    /* Keeps spacing consistent but invisible */
+}
+
+td:first-child {
+    text-align: left;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+/* PRINT OVERRIDES */
+@media print {
+    body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .header-section,
+    h2,
+    .highlight-box {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}

@@ -1,0 +1,282 @@
+---
+pagetitle: "Beyond Wealth Poster"
+format: 
+  html:
+    page-layout: custom
+    css: style.css
+    self-contained: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      tidy = FALSE,
+                      message = FALSE,
+                      fig.align = 'center',
+                      out.width = "100%")
+options(knitr.table.format = "html") 
+
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(corrplot)
+library(lmtest)
+library(car)
+library(jsonlite)
+library(maps) 
+library(ggrepel) 
+
+library(readr)
+df <- read_csv("World_Dataset.csv")
+
+# --- MODELING ---
+model1 <- lm(lifeexp ~ fertility + gdppercap + hdi + water + regime + polio, data= df)
+```
+
+<div class="poster-container">
+
+<div class="header-section">
+<h1 style="color: white;">Beyond Wealth: Determinants of Global Life Expectancy in 2022</h1>
+<p class="authors" style="color: white;">Libero Biagi 20250349, Moritz Baldauf 20250370, Marcell Hajdú 20250377</p>
+<p class="affiliation" style="color: white;">NOVA IMS</p>
+</div>
+
+<div class="body-row">
+
+<div class="column left-col">
+
+
+<div class="section-box">
+<h2>Background</h2>
+<p>The analysis of life expectancy across different countries is a common topic in development sociology. One of the key pillars of this analysis is the impact of GDP per capita on life expectancy, as captured by the Preston Curve. While this model clearly illustrates the diminishing returns of economic growth on health, other variables serve as equally critical determinants of longevity. Specifically, Human Capital (Lleras-Muney, 2005) and Institutional Factors, such as political stability (Besley & Kudamatsu, 2006), have been identified as major drivers of population health.</p>
+<p>Although our peers have extensively analysed these relationships in historical contexts (Cutler, Deaton, & Lleras-Muney, 2006), there is limited work focused on re-evaluating these factors in a post-pandemic world. The goal of this poster is to analyse how these variables influenced life expectancy in the 2022 landscape, and to examine where observed life expectancy diverges from predicted values.</p>
+</div>
+
+<div class="section-box">
+<h2>Data & Operationalization</h2>
+<p>To analyze the 2022 post-pandemic landscape, we constructed a cross-sectional dataset from Our World in Data. For this we combined seven different data sources into one showing the key Variables for our analysis. In the table below we mapped our theoretical pillars to specific indicators used in our models:</p>
+<table style="width:100%; font-size: 1.5em;">
+<tr><th>Theory</th><th>Indicator (Variable)</th><th>Description & Role</th></tr>
+<tr><td><strong>Economic</strong></td><td><strong>GDP per Capita</strong></td><td>Wealth impact (Preston Curve).</td></tr>
+<tr><td><strong>Human Capital</strong></td><td><strong>HDI</strong></td><td>Education & Living standards (Lleras-Muney).</td></tr>
+<tr><td><strong>Demography</strong></td><td><strong>Fertility Rate</strong></td><td>Reproductive health transition.</td></tr>
+<tr><td><strong>Infrastructure</strong></td><td><strong>Water Access</strong></td><td>% with basic water access (State Capacity).</td></tr>
+<tr><td><strong>Health System</strong></td><td><strong>Polio Vacc.</strong></td><td>% Immunization coverage (Health Access).</td></tr>
+<tr><td><strong>Institutions</strong></td><td><strong>Pol. Regime</strong></td><td>Factor: 0 (Autocracy) to 3 (Democracy).</td></tr>
+</table>
+</div>
+
+<div class="section-box">
+<h2>Statistical Analysis</h2>
+<p>We compared Linear, Log-Linear, and Interaction specifications. The <strong>Linear model</strong> maximized explanatory power (Adj. $R^2 = 0.85$):</p>
+<p style="text-align:center; font-size:1.5em; margin: 10px 0;">$$ LifeExp_i = \beta_0 + \beta_1 GDP_i + \beta_2 Fertility_i + \beta_3 HDI_i + \beta_4 Water_i + \beta_5 Regime_i + \epsilon_i $$</p>
+<p><strong>Diagnostics & Robustness:</strong> Initial diagnostic testing revealed non-constant variance (Heteroskedasticity). To address this, we re-estimated our Linear model—which passed the Ramsey RESET test for functional form—using <strong>Robust Standard Errors</strong>, ensuring our inference remains valid despite the variance in error terms. For our regressions, we used a significance level of 5%.</p>
+
+<div class="figure-box" style="margin-top:10px;">
+<h3>Regression Results</h3>
+```{r regression_table}
+# Calculate Robust Standard Errors (HC3)
+ct <- coeftest(model1, vcov = hccm)
+# Table is hardcoded below (formating)
+```
+<table>
+  <thead>
+    <tr>
+      <th>Predictor</th>
+      <th>Estimate</th>
+      <th>Std. Error</th>
+      <th>Pr(&gt;|t|)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>(Intercept)</td>
+      <td>50.690</td>
+      <td>4.340</td>
+      <td>***</td>
+    </tr>
+    <tr>
+      <td>Fertility Rate</td>
+      <td>-1.139</td>
+      <td>0.407</td>
+      <td>**</td>
+    </tr>
+    <tr>
+      <td>GDP per Capita</td>
+      <td>2.68e-05</td>
+      <td>1.71e-05</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>HDI</td>
+      <td>24.770</td>
+      <td>4.488</td>
+      <td>***</td>
+    </tr>
+    <tr>
+      <td>Water Access</td>
+      <td>0.048</td>
+      <td>0.034</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Regime: Electoral Dem.</td>
+      <td>0.674</td>
+      <td>0.891</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Regime: Electoral Auto.</td>
+      <td>-0.901</td>
+      <td>0.705</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Regime: Closed Auto.</td>
+      <td>-0.469</td>
+      <td>0.702</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Polio Vacc.</td>
+      <td>0.025</td>
+      <td>0.019</td>
+      <td></td>
+    </tr>
+  </tbody>
+</table>
+<p style="font-size: 1.5em; margin-top: 5px;">
+Obs: `r nobs(model1)` | Adj. R²: `r round(summary(model1)$adj.r.squared, 2)`
+</p>
+<p style="font-size: 1.5em; margin-top: 5px;">
+Signif. codes:  0 *** 0.001 ** 0.01 *
+</p>
+</div>
+
+<strong>Insight:</strong> <strong>HDI</strong> (Positive), <strong>GDP</strong> (Positive), and <strong>Fertility</strong> (Negative) are significant. Surprisingly, Regime and Infrastructure show no direct significant effect when controlling for HDI.
+
+</div>
+
+</div>
+
+<div class="column right-col">
+
+<div class="section-box">
+<h2>Results & Interpretation</h2>
+
+<div class="figure-box">
+<h3>1. Are well developed countries living longer</h3>
+```{r preston_curve, fig.height=3.8, out.width="100%"}
+# Identify Highlight Countries
+max_hdi_country <- df$Entity[which.max(df$hdi)]
+highlight_countries <- unique(c("Portugal", "United States", "Japan", "Equatorial Guinea", max_hdi_country))
+label_data <- df[df$Entity %in% highlight_countries, ]
+
+# PLOT CHANGES:
+# 1. aes(..., color = factor(regime)): Treat integer as factor on the fly
+# 2. scale_color_manual(...): Map the factor levels ("0", "1"...) to names and colors
+ggplot(df, aes(x = hdi, y = lifeexp, color = factor(regime))) +
+  geom_point(alpha = 0.7, size = 2) +
+  geom_smooth(method = "loess", se = FALSE, color = "black", linetype = "dashed", size=0.8) +
+  
+  # Highlight points (black circles)
+  geom_point(data = label_data, aes(x = hdi, y = lifeexp), 
+             shape = 1, color = "black", size = 2, stroke = 0.8, inherit.aes = FALSE) + 
+  
+  # Highlight labels
+  geom_text_repel(data = label_data, aes(label = Entity, x = hdi, y = lifeexp), 
+                  color = "black", size = 3.5, fontface = "bold",
+                  box.padding = 0.5, point.padding = 0.5, inherit.aes = FALSE) +
+  
+  # Annotation
+  annotate("text", x = 0.8, y = 60, label = "Democracies cluster\nat high longevity", 
+           color = "#333333", size = 3.5, fontface = "italic") +
+  
+  # NEW MANUAL SCALE
+  scale_color_manual(
+    values = c(
+      "0" = "#D7191C",    # Red
+      "1" = "#FDAE61",    # Orange
+      "2" = "#ABD9E9",    # Light Blue
+      "3" = "#2C7BB6"     # Dark Blue
+    ),
+    labels = c(
+      "0" = "Closed autocracy",
+      "1" = "Electoral autocracy", 
+      "2" = "Electoral democracy", 
+      "3" = "Liberal democracy"
+    ),
+    name = "Regime"
+  ) +
+
+  theme_minimal() +
+  labs(subtitle = "HDI vs. Life Expectancy colored by Political Regime",
+       x = "Human Development Index",
+       y = "Life Expectancy (Years)") +
+       
+  theme(legend.position = "bottom",
+        legend.margin = margin(t = -10, b = 0, unit = "pt"))
+```
+</div>
+<p style="margin-top: 5px; margin-bottom: 10px;">While economic wealth is foundational, the <strong>Linear specification</strong> confirmed that wealth has diminishing returns. The plot reveals a distinct <strong>"Democracy Cluster"</strong> at the high-income/high-longevity end, aligning with our institutional hypothesis, though the direct regression coefficient for regime type was statistically insignificant once HDI was controlled for.</p>
+
+<div class="figure-box">
+<h3>2. The Unexplained Gap (Residual Map)</h3>
+```{r residual_map, fig.height=3.8, out.width="100%"}
+df$residuals <- residuals(model1)
+df$predicted <- predict(model1) # Calculate predicted values for examples
+world_map <- map_data("world")
+world_map <- world_map[world_map$region != "Antarctica",] # Remove Antarctica
+df$region <- df$Entity
+df$region[df$region == "United States"] <- "USA"
+df$region[df$region == "United Kingdom"] <- "UK"
+df$region[df$region == "Democratic Republic of Congo"] <- "Democratic Republic of the Congo"
+df$region[df$region == "Congo"] <- "Republic of Congo"
+
+map_data_joined <- left_join(world_map, df, by = "region")
+
+ggplot(map_data_joined, aes(long, lat, group = group, fill = residuals)) +
+  geom_polygon(color = "black", size = 0.2) +
+  coord_fixed(ylim = c(-60, 90), xlim = c(-175, 185), ratio = 1.3, expand = FALSE) + # Adjusted limits
+  scale_fill_gradient2(low = "#D7191C", mid = "white", high = "#2C7BB6", midpoint = 0, 
+                       name = "Residuals (Years)", 
+                       na.value = "#F9F9F9",
+                       breaks = c(-10, -5, 0, 5, 10), 
+                       guide = guide_colorbar(
+                         frame.colour = "black", 
+                         ticks.colour = "black",
+                         barheight = 6,
+                         barwidth = 0.6
+                       )) + 
+  theme_void() +
+  theme(legend.position = c(0.12, 0.2), # Overlap Pacific
+        legend.background = element_rect(fill = "transparent", color = NA),
+        legend.title = element_text(size=8, face="bold"), 
+        legend.text = element_text(size=7),
+        plot.margin = unit(c(0, 0, 0, 0), "cm"))
+```
+</div>
+<p style="margin-top: 5px; margin-bottom: 10px;">The map highlights where our socio-economic model "fails" to predict longevity. <span style="color:#2C7BB6"><strong>Blue regions</strong></span> (overperformers) likely benefit from unmeasured cultural factors. For example, <strong>`r df$Entity[which.max(df$residuals)]`</strong> lives `r round(max(df$residuals), 1)` years longer than predicted (Actual: `r round(df$lifeexp[which.max(df$residuals)], 1)`, Predicted: `r round(df$predicted[which.max(df$residuals)], 1)`). Conversely, <span style="color:#D7191C"><strong>Red regions</strong></span> like <strong>`r df$Entity[which.min(df$residuals)]`</strong> (Residual: `r round(min(df$residuals), 1)`) may suffer from localized instability or specific health crises.</p>
+</div>
+
+<div class="section-box conclusion-box" style="margin-bottom: 10px;">
+<h2>Conclusions & Next Steps</h2>
+<ul style="margin-bottom: 5px;">
+<li><strong>Findings:</strong> <strong>Human Capital</strong> and <strong>Low Fertility</strong> are the primary drivers of longevity in 2022, though potential reverse causality suggests longevity may also drive lower fertility.</li>
+<li><strong>Institutions:</strong> Democracies cluster at high longevity, though the direct linear effect is absorbed by HDI.</li>
+<li><strong>Future Work:</strong> Research should prioritize <strong>Panel Data</strong> for causality and explore <strong>Inequality</strong> or <strong>Cultural Factors</strong> to explain regional residuals.</li>
+</ul>
+</div>
+
+<div class="section-box references-box" style="font-size: 0.7em;">
+<h4>References</h4>
+<p>Besley, T., & Kudamatsu, M. (2006). Health and Democracy. <em>American Economic Review</em>.<br>
+Cutler, D., Deaton, A., & Lleras-Muney, A. (2006). The Determinants of Mortality. <em>Journal of Economic Perspectives</em>.<br>
+Lleras-Muney, A. (2005). The Relationship Between Education and Adult Mortality in the United States. <em>Review of Economic Studies</em>.<br>
+Our World in Data. (2022). Data retrieved from <em>https://ourworldindata.org/</em>.</p>
+</div>
+
+</div>
+</div>
+</div>

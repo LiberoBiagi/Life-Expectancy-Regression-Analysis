@@ -1,0 +1,288 @@
+---
+title: "BEYOND WEALTH: DETERMINANTS OF GLOBAL LIFE EXPECTANCY IN 2022"
+author: "Libero Biagi, Moritz Baldauf, Maracell Hajdú"
+date: "2026-01-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(corrplot)
+library(lmtest)
+library(car)
+library(jsonlite)
+```
+
+## Introduction
+The analysis of life expectancy across different countries is a central topic in development sociology. While the 'Preston Curve' clearly illustrates the impact of GDP per capita, other variables such as Human Capital (Lleras-Muney, 2005) and Institutional Factors (Besley & Kudamatsu, 2006) are critical drivers of population health.
+
+Existing literature has extensively analyzed these relationships historically (Cutler et al., 2006), but there is limited work re-evaluating them in a post-pandemic context. **Our research question is:** How did economic, institutional, and demographic factors influence global life expectancy in the 2022 post-pandemic landscape?
+
+## Literature Review & Variable Selection
+To address our research question, we selected variables that map to key theoretical pillars identified in the literature:
+
+*   **Economic:** We use **GDP per Capita** to test the wealth impact (Preston Curve).
+*   **Human Capital:** We use the **Human Development Index (HDI)** as a proxy for education and living standards, following Lleras-Muney (2005).
+*   **Institutions:** We connect political stability to health (Besley & Kudamatsu, 2006) using **Political Regime** types (from Autocracy to Democracy).
+*   **Health Systems & Infrastructure:** We include **Polio Vaccination coverage** and **Water Access** to measure state capacity and health access.
+*   **Demography:** We control for the **Fertility Rate** to capture the reproductive health transition.
+## Dataset
+We constructed a cross-sectional dataset using 2022 data from **Our World in Data**. We combined seven different data sources to create a global dataset representing the post-pandemic landscape, filtering for countries with complete data across our key indicators.
+
+We decided on using data from 2022 because this was the most recent year where all of our variables were available. We used all the countries of the world with data available.
+
+#### We decided on using the following variables:
+
+- Life expecrancy (dependent variable)
+- Fertility rate
+- Military spending as a % of GDP
+- GDP per capita
+- % of population with access to drinking water
+- HDI
+- Type of political regime (factor variable with 4 levels)
+- % of vaccination coverage (Polio, Hepatitis B and Measles)
+
+```{r, include=FALSE}
+df1 <- read.csv("https://ourworldindata.org/grapher/life-expectancy-marimekko.csv?v=1&csvType=full&useColumnShortNames=true")
+df1 <- df1[df1$Year==2022,]
+df1 <- df1[,c(1,2,4)]
+
+df2 <- read.csv("https://ourworldindata.org/grapher/comparison-of-fertility-rates.csv?v=1&csvType=full&useColumnShortNames=true")
+df2 <- df2[df2$Year==2022,]
+df2 <- df2[,c(1,4)]
+
+df5 <- read.csv("https://ourworldindata.org/grapher/military-spending-as-a-share-of-gdp-sipri.csv?v=1&csvType=full&useColumnShortNames=true")
+df5 <- df5[df5$Year==2022,]
+df5 <- df5[,c(1,4)]
+colnames(df5)[2] <- "Military_Spending"
+
+df6 <- read.csv("https://ourworldindata.org/grapher/gdp-per-capita-maddison-project-database.csv?v=1&csvType=full&useColumnShortNames=true")
+df6 <- df6[df6$Year==2022,]
+df6 <- df6[,c(1,4)]
+
+df8 <- read.csv("https://ourworldindata.org/grapher/human-development-index.csv?v=1&csvType=full&useColumnShortNames=true")
+df8 <- df8[df8$Year == 2022,]
+df8 <- df8[,c(1,4)]
+
+df9 <- read.csv("https://ourworldindata.org/grapher/population-using-at-least-basic-drinking-water.csv?v=1&csvType=full&useColumnShortNames=true")
+df9 <- df9[df9$Year == 2022,]
+df9 <- df9[,c(1,4)]
+
+df10 <- read.csv("https://ourworldindata.org/grapher/political-regime.csv?v=1&csvType=full&useColumnShortNames=true")
+df10 <- df10[df10$Year == 2022,]
+df10 <- df10[,c(1,4)]
+
+df11 <- read.csv("https://ourworldindata.org/grapher/global-vaccination-coverage.csv?v=1&csvType=full&useColumnShortNames=true")
+df11 <- df11[df11$Year == 2022,]
+df11 <- df11[,c(1,4,7,9)]
+
+library(dplyr)
+
+df_final <- df1 %>%
+  left_join(df2, by = "Entity") %>%
+  left_join(df5, by = "Entity") %>%
+  left_join(df6, by = "Entity") %>%
+  left_join(df8, by = "Entity") %>%
+  left_join(df9, by = "Entity") %>%
+  left_join(df10, by = "Entity") %>%
+  left_join(df11, by = "Entity")
+
+df_final <- df_final[df_final$Code != "",]
+
+df_final <- df_final[rowSums(is.na(df_final)) <= 3, ]
+
+df_final$mf_youth_and_adults__15_64_years__average_years_of_education <- NULL
+df_final$Military_Spending <- NULL
+
+sum(!complete.cases(df_final))
+colSums(is.na(df_final))
+
+df_final <- df_final[df_final$Code != "OWID_WRL",]
+df_final <- na.omit(df_final)
+
+df <- df_final
+```
+## Exploring the dataset, checking possible log-transformation
+
+```{r}
+summary(df)
+```
+
+```{r, include = FALSE}
+df_long <- df %>%
+  select(-(c(1,2,8))) %>%   # drop first two columns
+  pivot_longer(
+    cols = everything(),
+    names_to = "variable",
+    values_to = "value"
+  )
+```
+
+```{r, include = FALSE}
+p_original <- ggplot(df_long, aes(x = value)) +
+  geom_histogram(
+    bins = 15,
+    fill = "steelblue",
+    color = "black",      # <-- bin outlines
+    alpha = 0.8
+  ) +
+  facet_wrap(~ variable, scales = "free") +
+  theme_minimal() +
+  labs(
+    title = "Histograms of Variables (Original Scale)",
+    x = "Value",
+    y = "Count"
+  )
+```
+
+```{r}
+p_original
+```
+
+
+```{r, include = FALSE}
+p_log <- ggplot(df_long, aes(x = log(value))) +
+  geom_histogram(
+    bins = 15,
+    fill = "darkorange",
+    color = "black",      # <-- bin outlines
+    alpha = 0.8
+  ) +
+  facet_wrap(~ variable, scales = "free") +
+  theme_minimal() +
+  labs(
+    title = "Histograms of Variables (Log Scale)",
+    x = "log(Value)",
+    y = "Count"
+  )
+```
+
+```{r}
+p_log
+```
+
+#### We found that the fertility rate and the GDP per capita became more symmetrical after the log-transformation, they are worth testing in the modeling phase.
+
+```{r, include=FALSE}
+df$regime_row_owid <- as.factor(df$regime_row_owid)
+
+
+#correlation matrix
+cor_matrix <- cor(df[,c(3:7, 9:ncol(df))])
+```
+
+```{r}
+corrplot(
+  cor_matrix,
+  method = "color",
+  order = "hclust",
+  addCoef.col = "black",
+  tl.col = "black",
+  tl.srt = 45,
+  tl.cex = 0.9,
+  number.cex = 0.8,
+  col = colorRampPalette(c("#B2182B", "white", "#2166AC"))(200)
+)
+```
+
+#### We decided to only keep the polio vaccine out of the 3 vaccines because they were highly correlated and would have most likely caused multicollinearity in our models. We picked polio because it had the highest correlation with our dependant variable. We also decided to drop the military spending column since it had many missing values.
+
+```{r, include=FALSE}
+df$coverage__antigen_hepb3 <- NULL
+df$coverage__antigen_mcv1 <- NULL
+
+colnames(df)[3:9] <- c("lifeexp","fertility","gdppercap","hdi","water","regime","polio")
+```
+
+```{r, include=FALSE}
+write.csv(df,"World_Dataset.csv",row.names = F)
+```
+
+## Modeling with multiple linear regression
+#### We decided to test 3 different models:
+
+- First model: Level-level model (all of our variables kept level)
+- Second model: Mixed model (we take the natural logarithm of the fertility rate and the GDP per capita to potentially improve functional form)
+- Third model: Level-level model with an interaction term (the differences in GDP per capita might have a different effect on the life expectancy in different regimes, we test it this way)
+
+#### We decided to try these functional forms based on our findings of the univariate data visualizations and based on our rationale.
+
+```{r, include=FALSE}
+#model 1 fully linear all variables
+model1 <- lm(lifeexp ~ fertility + gdppercap + hdi + water + regime + polio, data= df)
+
+#model 2 lin log model (select few variables logged based on distribution (log histograms))
+model2 <- lm(lifeexp ~ log(fertility) + log(gdppercap) + hdi + water + regime + polio, data= df)
+
+#model 3: we try the interaction of the regime with the gdp per capita
+model3 <- lm(lifeexp ~ fertility + gdppercap + hdi + water + regime + polio + regime*gdppercap, data= df)
+```
+
+```{r, include=FALSE}
+library(stargazer)
+models <- stargazer(model1, model2, model3,
+          type = "text",
+          digits = 4,
+          title = "Regression Results",
+          column.labels = c("Model 1", "Model 2", "Model 3"),
+          no.space = TRUE,
+          single.row = TRUE)
+```
+
+```{r}
+models
+```
+#### According to our adjusted R^2 values, model 1 is our best model (lin-lin without interactions).
+
+## Checking for heteroskedasticity
+#### Breusch-Pagan test
+
+```{r}
+bptest(model1)
+```
+We can not reject the H0, our model is homoskedastic.
+
+#### Special White test
+
+```{r}
+uhat2 <- residuals(model1)^2
+fhat  <- fitted(model1)
+aux <- lm(uhat2 ~ fhat + I(fhat^2))
+lmtest::bptest(aux)
+```
+#### Same result as the bptest, our model is homoskedastic.
+
+## Checking the functional form with the Reset test
+
+```{r}
+resettest(model1)
+```
+#### Our functional form seems to be correct.
+
+## Final model:
+
+```{r}
+summary(model1)
+```
+#### The fertility rate and the HDI were significant on 5% significance level, the rest of our variables were not.
+
+#### One unit increase in the fertility rate means on average a 1.139 year decrease in life expectancy. This finding makes sense since less developed countries tend to have a higher fertility rate. This seems to be a pretty good indicator in our case.
+
+#### A 0.01 unit increase in the HDI of a country means a 0.2477 year increase in life expectancy on average, ceteris paribus. The values in HDI vary a lot between countries so this relationship is economically and statistically relevant.
+
+## Conclusion and Reflection
+**Findings:** Our analysis confirms that while wealth (GDP) is foundational, it is not sufficient. **Human Capital** and **Low Fertility** emerged as the primary significant drivers of longevity in 2022. Interestingly, while democracies cluster at high longevity levels visually, the direct effect of Political Regime was not statistically significant when controlling for HDI.
+
+**Limitations:** As we used cross-sectional data, we cannot prove causality (e.g., lower fertility might be a result of longer life, not just a cause).
+
+**Future Work:** Future research should prioritize Panel Data to establish causality and explore cultural factors to explain regional outliers.
+
+
+
